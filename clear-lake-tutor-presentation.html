@@ -385,6 +385,63 @@
   .t-content h4 { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
   .t-content p { font-size: 13px; color: #666; line-height: 1.5; }
 
+  /* ───── FULLSCREEN BUTTON ───── */
+  #fs-btn {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 1000;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--white);
+    font-size: 18px;
+    line-height: 1;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s;
+  }
+  #fs-btn:hover { background: rgba(255,255,255,0.22); }
+
+  /* ───── ARROW NAV BUTTONS ───── */
+  #nav-arrows {
+    position: fixed;
+    bottom: 20px; left: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+  }
+  .nav-arrow {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--white);
+    font-size: 20px;
+    line-height: 1;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s;
+  }
+  .nav-arrow:hover { background: rgba(255,255,255,0.22); }
+  .nav-arrow:disabled { opacity: 0.3; cursor: default; }
+
+  /* ───── FULLSCREEN SINGLE-SLIDE MODE ───── */
+  body.fs-mode {
+    overflow: hidden;
+    padding: 0;
+    gap: 0;
+  }
+  body.fs-mode .slide { display: none; }
+  body.fs-mode .slide.fs-active {
+    display: flex;
+    width: 100vw;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  body.fs-mode .nav { display: none; }
+
   /* ───── NAV BAR ───── */
   .nav {
     width: 960px;
@@ -803,32 +860,94 @@
   <div class="slide-num slide-num-light">10 / 10</div>
 </div>
 
+<button id="fs-btn" title="Toggle fullscreen">⛶</button>
+<div id="nav-arrows">
+  <button class="nav-arrow" id="prev-btn">&#8592;</button>
+  <button class="nav-arrow" id="next-btn">&#8594;</button>
+</div>
 <div class="nav" id="nav-dots"></div>
 
 <script>
   const slides = document.querySelectorAll('.slide');
   const navContainer = document.getElementById('nav-dots');
+  const fsBtn = document.getElementById('fs-btn');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  let currentIndex = 0;
 
+  // Build nav dots
   slides.forEach((_, i) => {
     const dot = document.createElement('div');
     dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => {
-      slides[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      document.querySelectorAll('.nav-dot').forEach((d, j) => d.classList.toggle('active', i === j));
-    });
+    dot.addEventListener('click', () => goTo(i));
     navContainer.appendChild(dot);
   });
 
+  function goTo(idx) {
+    currentIndex = idx;
+    updateDots();
+    if (document.fullscreenElement) {
+      slides.forEach((s, i) => s.classList.toggle('fs-active', i === idx));
+    } else {
+      slides[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    updateArrows();
+  }
+
+  function updateDots() {
+    document.querySelectorAll('.nav-dot').forEach((d, j) => d.classList.toggle('active', j === currentIndex));
+  }
+
+  function updateArrows() {
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === slides.length - 1;
+  }
+
+  prevBtn.addEventListener('click', () => { if (currentIndex > 0) goTo(currentIndex - 1); });
+  nextBtn.addEventListener('click', () => { if (currentIndex < slides.length - 1) goTo(currentIndex + 1); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(Math.min(currentIndex + 1, slides.length - 1));
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(Math.max(currentIndex - 1, 0));
+  });
+
   const observer = new IntersectionObserver(entries => {
+    if (document.fullscreenElement) return;
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const idx = Array.from(slides).indexOf(entry.target);
-        document.querySelectorAll('.nav-dot').forEach((d, j) => d.classList.toggle('active', idx === j));
+        currentIndex = Array.from(slides).indexOf(entry.target);
+        updateDots();
+        updateArrows();
       }
     });
   }, { threshold: 0.6 });
-
   slides.forEach(s => observer.observe(s));
+
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+      document.body.classList.add('fs-mode');
+      slides.forEach((s, i) => s.classList.toggle('fs-active', i === currentIndex));
+      fsBtn.textContent = '✕';
+      fsBtn.title = 'Exit fullscreen';
+    } else {
+      document.body.classList.remove('fs-mode');
+      slides.forEach(s => s.classList.remove('fs-active'));
+      fsBtn.textContent = '⛶';
+      fsBtn.title = 'Toggle fullscreen';
+      slides[currentIndex].scrollIntoView({ block: 'center' });
+    }
+    updateArrows();
+  });
+
+  updateArrows();
 </script>
 </body>
 </html>
