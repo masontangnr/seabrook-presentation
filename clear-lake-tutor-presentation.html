@@ -390,8 +390,8 @@
     position: fixed;
     top: 16px; right: 16px;
     z-index: 1000;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(15, 39, 68, 0.75);
+    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 8px;
     padding: 8px 10px;
     cursor: pointer;
@@ -401,7 +401,7 @@
     backdrop-filter: blur(6px);
     transition: background 0.2s;
   }
-  #fs-btn:hover { background: rgba(255,255,255,0.22); }
+  #fs-btn:hover { background: rgba(15, 39, 68, 0.95); }
 
   /* ───── ARROW NAV BUTTONS ───── */
   #nav-arrows {
@@ -412,8 +412,8 @@
     gap: 8px;
   }
   .nav-arrow {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(15, 39, 68, 0.75);
+    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 8px;
     padding: 8px 16px;
     cursor: pointer;
@@ -423,7 +423,7 @@
     backdrop-filter: blur(6px);
     transition: background 0.2s;
   }
-  .nav-arrow:hover { background: rgba(255,255,255,0.22); }
+  .nav-arrow:hover { background: rgba(15, 39, 68, 0.95); }
   .nav-arrow:disabled { opacity: 0.3; cursor: default; }
 
   /* ───── FULLSCREEN SINGLE-SLIDE MODE ───── */
@@ -435,10 +435,14 @@
   body.fs-mode .slide { display: none; }
   body.fs-mode .slide.fs-active {
     display: flex;
-    width: 100vw;
-    min-height: 100vh;
-    border-radius: 0;
-    box-shadow: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 960px;
+    min-height: 540px;
+    transform: translate(-50%, -50%) scale(var(--fs-scale, 1));
+    transform-origin: center center;
+    border-radius: 16px;
   }
   body.fs-mode .nav { display: none; }
 
@@ -493,7 +497,7 @@
     <div class="dot"></div>
     Presented by Mason &nbsp;·&nbsp; Seabrook Intermediate &nbsp;·&nbsp; Business Simulation
   </div>
-  <div class="slide-num slide-num-light">1 / 7</div>
+  <div class="slide-num slide-num-light">1 / 10</div>
 </div>
 
 <!-- ── SLIDE 2: ABOUT ME ── -->
@@ -543,7 +547,7 @@
       <img src="Studio_Kairos_Logo.png" alt="Studio Kairos" style="height:96px; object-fit:contain; border-radius:8px;">
     </div>
   </div>
-  <div class="slide-num slide-num-dark">2 / 7</div>
+  <div class="slide-num slide-num-dark">2 / 10</div>
 </div>
 
 <!-- ── SLIDE 3: WHAT WE DO ── -->
@@ -583,7 +587,7 @@
       <p>Every session is tailored to the student's specific needs</p>
     </div>
   </div>
-  <div class="slide-num slide-num-light">3 / 7</div>
+  <div class="slide-num slide-num-light">3 / 10</div>
 </div>
 
 <!-- ── SLIDE 4: DIFFERENT ── -->
@@ -635,7 +639,7 @@
       </div>
     </div>
   </div>
-  <div class="slide-num slide-num-dark">4 / 7</div>
+  <div class="slide-num slide-num-dark">4 / 10</div>
 </div>
 
 <!-- ── SLIDE 5: MOST IMPORTANT ASPECT ── -->
@@ -667,7 +671,7 @@
       <p>With the right setup, your website and Google listing bring clients to you without constant effort.</p>
     </div>
   </div>
-  <div class="slide-num slide-num-light">5 / 7</div>
+  <div class="slide-num slide-num-light">5 / 10</div>
 </div>
 
 <!-- ── SLIDE 6: GETTING STARTED ── -->
@@ -705,7 +709,7 @@
       </div>
     </div>
   </div>
-  <div class="slide-num slide-num-light">6 / 7</div>
+  <div class="slide-num slide-num-light">6 / 10</div>
 </div>
 
 <!-- ── SLIDE 7: DAY IN THE LIFE ── -->
@@ -743,7 +747,7 @@
       </div>
     </div>
   </div>
-  <div class="slide-num slide-num-dark">7 / 8</div>
+  <div class="slide-num slide-num-dark">7 / 10</div>
 </div>
 
 <!-- ── SLIDE 8: COMPONENTS TO A GOOD WEBSITE ── -->
@@ -788,7 +792,7 @@
       </div>
     </div>
   </div>
-  <div class="slide-num slide-num-light">8 / 9</div>
+  <div class="slide-num slide-num-light">8 / 10</div>
 </div>
 
 <!-- ── SLIDE 9: GOOGLE TRENDS ── -->
@@ -875,6 +879,9 @@
   const nextBtn = document.getElementById('next-btn');
   let currentIndex = 0;
 
+  // Measure each slide's natural height before any fullscreen transforms
+  const slideHeights = Array.from(slides).map(s => s.offsetHeight);
+
   // Build nav dots
   slides.forEach((_, i) => {
     const dot = document.createElement('div');
@@ -887,6 +894,7 @@
     currentIndex = idx;
     updateDots();
     if (document.fullscreenElement) {
+      setFsScale(idx);
       slides.forEach((s, i) => s.classList.toggle('fs-active', i === idx));
     } else {
       slides[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -931,8 +939,19 @@
     }
   });
 
+  function setFsScale(idx) {
+    const h = slideHeights[idx] || 540;
+    const scale = Math.min(window.innerWidth / 960, window.innerHeight / h);
+    document.body.style.setProperty('--fs-scale', scale);
+  }
+
+  window.addEventListener('resize', () => {
+    if (document.fullscreenElement) setFsScale(currentIndex);
+  });
+
   document.addEventListener('fullscreenchange', () => {
     if (document.fullscreenElement) {
+      setFsScale(currentIndex);
       document.body.classList.add('fs-mode');
       slides.forEach((s, i) => s.classList.toggle('fs-active', i === currentIndex));
       fsBtn.textContent = '✕';
